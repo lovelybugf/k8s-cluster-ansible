@@ -1,0 +1,57 @@
+---
+- name: Kiem tra va gia han chung chi TLS Kubernetes
+  hosts: all
+  become: true
+  tasks:
+    - name: Thuc hien kiem tra va gia han cert (Chi chay tren Master Node)
+      block:
+        - name: Kiem tra han su dung chung chi hien tai
+          ansible.builtin.command: kubeadm certs check-expiration
+          register: cert_expiration_before
+
+        - name: Hien thi han su dung chung chi truoc khi renew
+          ansible.builtin.debug:
+            var: cert_expiration_before.stdout_lines
+
+        - name: Thuc hien gia han toan bo chung chi
+          ansible.builtin.command: kubeadm certs renew all
+          register: cert_renew_result
+
+        - name: Hien thi ket qua renew
+          ansible.builtin.debug:
+            var: cert_renew_result.stdout_lines
+
+        - name: Restart cac service he thong de nhan chung chi moi
+          block:
+            - name: Tam thoi di chuyen static pods manifest ra ngoai
+              ansible.builtin.command: mv /etc/kubernetes/manifests/{{ item }}.yaml /tmp/
+              loop:
+                - kube-apiserver
+                - kube-controller-manager
+                - kube-scheduler
+                - etcd
+              ignore_errors: true
+
+            - name: Cho 10 giay de Kubelet tat cac Pods
+              ansible.builtin.pause:
+                seconds: 10
+
+            - name: Dua cac file manifest tro lai thu muc cu
+              ansible.builtin.command: mv /tmp/{{ item }}.yaml /etc/kubernetes/manifests/
+              loop:
+                - kube-apiserver
+                - kube-controller-manager
+                - kube-scheduler
+                - etcd
+              ignore_errors: true
+
+        - name: Kiem tra lai han su dung chung chi sau khi renew
+          ansible.builtin.command: kubeadm certs check-expiration
+          register: cert_expiration_after
+
+        - name: Hien thi han su dung chung chi sau khi renew
+          ansible.builtin.debug:
+            var: cert_expiration_after.stdout_lines
+
+      when: "'172.25.250.20' in inventory_hostname or 'k8s-master' in inventory_hostname"
+...

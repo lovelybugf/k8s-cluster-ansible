@@ -1,0 +1,47 @@
+---
+- name: Tu dong sao luu co so du lieu etcd
+  hosts: all
+  become: true
+  tasks:
+    - name: Thuc hien backup etcd (Chi chay tren Master Node)
+      block:
+        - name: Tao thu muc luu tru backup
+          ansible.builtin.file:
+            path: /backup/etcd
+            state: directory
+            mode: '0750'
+
+        - name: Thiet lap ten file backup theo thoi gian
+          ansible.builtin.set_fact:
+            backup_file: "/backup/etcd/etcd-snapshot-{{ ansible_date_time.date }}_{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.db"
+
+        - name: Chay lenh snapshot etcd
+          ansible.builtin.shell: |
+            ETCDCTL_API=3 etcdctl \
+              --endpoints=https://127.0.0.1:2379 \
+              --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+              --cert=/etc/kubernetes/pki/etcd/server.crt \
+              --key=/etc/kubernetes/pki/etcd/server.key \
+              snapshot save {{ backup_file }}
+          register: etcd_snapshot_result
+
+        - name: Hien thi trang thai backup etcd
+          ansible.builtin.debug:
+            msg: "Snapshot saved successfully to {{ backup_file }}"
+          when: etcd_snapshot_result.rc == 0
+
+        - name: Don dep cac ban backup etcd cu hon 7 ngay
+          ansible.builtin.find:
+            paths: /backup/etcd
+            age: 7d
+            patterns: "etcd-snapshot-*.db"
+          register: files_to_delete
+
+        - name: Xoa file backup etcd cu
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            state: absent
+          loop: "{{ files_to_delete.files }}"
+
+      when: "'172.25.250.20' in inventory_hostname or 'k8s-master' in inventory_hostname"
+...

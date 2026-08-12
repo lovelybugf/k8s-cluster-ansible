@@ -1,0 +1,42 @@
+---
+- name: Don dep o dia va giai phong bo nho dem container
+  hosts: all
+  become: true
+  tasks:
+    - name: Lay thong tin dung luong dia ban dau
+      ansible.builtin.command: df -h /
+      register: disk_before
+
+    - name: Hien thi dung luong truoc don dep
+      ansible.builtin.debug:
+        var: disk_before.stdout_lines
+
+    - name: Don dep logs he thong trong /var/log/journal hon 14 ngay
+      ansible.builtin.command: journalctl --vacuum-time=14d
+      ignore_errors: true
+
+    - name: Don dep cac file log tam thoi trong /tmp va /var/tmp
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/var/tmp/*.log"
+        - "/tmp/*.log"
+
+    - name: Don dep runtime cache containerd (neu co command ctr)
+      ansible.builtin.command: ctr -n k8s.io images prune --all
+      ignore_errors: true
+
+    - name: Don dep he thong build docker neu co su dung docker
+      ansible.builtin.command: docker system prune -f --volumes
+      ignore_errors: true
+      when: ansible_facts.services['docker.service'] is defined
+
+    - name: Lay thong tin dung luong dia sau khi don dep
+      ansible.builtin.command: df -h /
+      register: disk_after
+
+    - name: Hien thi dung luong sau don dep
+      ansible.builtin.debug:
+        var: disk_after.stdout_lines
+...
