@@ -1,0 +1,15 @@
+---
+- name: Tu dong don dep cac Pod job da chay thanh cong
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Thuc hien xoa Pod trang thai Completed (Succeeded)
+      ansible.builtin.shell: |
+        kubectl delete pods -n awx --field-selector=status.phase=Succeeded
+      register: delete_output
+      ignore_errors: true
+
+    - name: Hien thi ket qua don dep
+      ansible.builtin.debug:
+        var: delete_output.stdout_lines
+...
