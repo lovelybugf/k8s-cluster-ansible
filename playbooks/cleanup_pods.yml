@@ -2,6 +2,8 @@
 - name: Tu dong don dep cac Pod job da chay thanh cong
   hosts: localhost
   connection: local
+  become: false
+  gather_facts: false
   tasks:
     - name: Thuc hien xoa Pod trang thai Completed (Succeeded)
       ansible.builtin.shell: |
