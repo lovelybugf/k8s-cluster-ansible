@@ -5,11 +5,20 @@
   become: false
   gather_facts: false
   tasks:
-    - name: Don dep cac Pod trang thai Succeeded bang module K8s
-      kubernetes.core.k8s:
-        state: absent
+    - name: 1. Lay danh sach cac Pod da hoan thanh (Succeeded)
+      kubernetes.core.k8s_info:
         kind: Pod
         namespace: awx
         field_selectors:
           - status.phase=Succeeded
+      register: succeeded_pods
+
+    - name: 2. Xoa tung Pod hoan thanh khoi he thong
+      kubernetes.core.k8s:
+        state: absent
+        kind: Pod
+        namespace: awx
+        name: "{{ item.metadata.name }}"
+      loop: "{{ succeeded_pods.resources }}"
+      when: succeeded_pods.resources | length > 0
 ...
