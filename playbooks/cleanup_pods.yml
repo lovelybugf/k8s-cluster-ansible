@@ -4,11 +4,15 @@
   connection: local
   become: false
   gather_facts: false
+  environment:
+    no_proxy: "172.25.250.20,127.0.0.1,localhost"
+    NO_PROXY: "172.25.250.20,127.0.0.1,localhost"
   tasks:
     - name: 1. Lay danh sach cac Pod da hoan thanh (Succeeded)
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: awx
+        validate_certs: false
         field_selectors:
           - status.phase=Succeeded
       register: succeeded_pods
@@ -18,6 +22,7 @@
         state: absent
         kind: Pod
         namespace: awx
+        validate_certs: false
         name: "{{ item.metadata.name }}"
       loop: "{{ succeeded_pods.resources }}"
       when: succeeded_pods.resources | length > 0
