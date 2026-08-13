@@ -1,0 +1,48 @@
+---
+- name: Tu dong tao Job Template tren AAP tu cac file Playbook
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # 📌 Thay thế thông tin kết nối AAP của bạn tại đây
+    aap_url: "https://aap2.6-ssc2.amigo.vn"
+    aap_user: "nampl"
+    aap_pass: "password_secret_cua_ban"    # Khuyên dùng ansible-vault để mã hóa mật khẩu này
+    
+    # 📌 Các thông số liên kết mặc định trên AAP
+    aap_project_name: "k8s-cluster"         # Tên Project đã tạo trên AAP
+    aap_inventory_name: "k8s-cluster-nampd-dynamic" # Tên Inventory muốn gán mặc định
+    aap_credentials:                         # Danh sách Credentials muốn đính kèm mặc định
+      - "K8s-Node-SSH"
+      - "K8s-Cluster-API"
+
+  tasks:
+    - name: 1. Quet toan bo file playbook (.yml) trong thu muc playbooks/
+      ansible.builtin.find:
+        paths: "{{ playbook_dir }}"                # Sử dụng biến magic playbook_dir để định vị tuyệt đối thư mục chứa playbook
+        patterns: "*.yml"
+      register: found_playbooks
+
+    - name: 2. Hien thi so luong playbook tim thay de kiem chung
+      ansible.builtin.debug:
+        msg: "Tim thay {{ found_playbooks.matched }} file playbook: {{ found_playbooks.files | map(attribute='path') | list }}"
+
+    - name: 3. Tu dong khoi tao Job Template tren AAP cho tung Playbook
+      awx.awx.job_template:
+        controller_host: "{{ aap_url }}"
+        controller_username: "{{ aap_user }}"
+        controller_password: "{{ aap_pass }}"
+        validate_certs: false
+        
+        # Tự động chuẩn hóa tên hiển thị: đổi dấu gạch dưới thành dấu cách và viết hoa chữ cái đầu
+        name: "k8s - {{ item.path | basename | replace('.yml', '') | replace('_', ' ') | title }}"
+        project: "{{ aap_project_name }}"
+        playbook: "playbooks/{{ item.path | basename }}"
+        inventory: "{{ aap_inventory_name }}"
+        credentials: "{{ aap_credentials }}"
+        state: present
+      loop: "{{ found_playbooks.files }}"
+      # Bỏ qua chính file playbook tự tạo này để tránh tạo vòng lặp vô tận
+      when: "'auto_create_templates.yml' not in item.path"
+...
