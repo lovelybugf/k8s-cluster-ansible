@@ -1,2 +1,1 @@
 openssh-clients [platform:rpm]
-openshift-clients [platform:rpm]
