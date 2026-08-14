@@ -14,7 +14,15 @@ dependencies:
   python: requirements.txt
   system: bindep.txt
 
+additional_build_files:
+  - src: ansible.cfg
+    dest: conf.d/
+  - src: private_automation_hub-ca.pem
+    dest: certs/
+
 additional_build_steps:
-  prepend_base:
-    - RUN pip3 install --upgrade pip
+  prepend_galaxy:
+    - COPY _build/conf.d/ansible.cfg /home/runner/.ansible.cfg
+    - COPY _build/certs/private_automation_hub-ca.pem /etc/pki/ca-trust/source/anchors
+    - RUN update-ca-trust
 ...
