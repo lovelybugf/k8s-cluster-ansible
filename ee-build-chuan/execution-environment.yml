@@ -3,7 +3,7 @@ version: 3
 
 images:
   base_image:
-    name: registry.access.redhat.com/ubi9/ubi:latest
+    name: registry.redhat.io/ansible-automation-platform/ee-minimal-rhel10:latest
 
 dependencies:
   ansible_core:
@@ -13,10 +13,6 @@ dependencies:
   galaxy: requirements.yml
   python: requirements.txt
   system: bindep.txt
-  # Giải pháp chính thống của Red Hat để bỏ qua các gói hệ thống bị lỗi của Collection
-  exclude:
-    system:
-      - openshift-clients
 
 additional_build_files:
   - src: ansible.cfg
@@ -30,4 +26,3 @@ additional_build_steps:
     - COPY _build/conf.d/ansible.cfg /root/.ansible.cfg
     - COPY _build/certs/private_automation_hub-ca.pem /etc/pki/ca-trust/source/anchors
     - RUN update-ca-trust
-...
