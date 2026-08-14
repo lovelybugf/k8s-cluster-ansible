@@ -4,15 +4,19 @@
   connection: local
   become: false
   gather_facts: false
+  vars:
+    # Khai bao thong tin ket noi den cum K8s (thay doi IP va Token cua ban tai day)
+    k8s_api_url: "https://10.1.68.140:6443" # IP cua may .8 control plane
+    k8s_token: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjV5NUJvWFJBaGg4ZlJDOGFBbEZfNmF6WU9wSDdOd2g0eFNmay1SNEE1b1kifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJhd3giLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoiYXd4LWFkbWluLXRva2VuIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImF3eC1hZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjQ1ZTc3MjE2LTMwNDgtNDc4Mi05OTZiLTVhNzFjOTMwYjdkNCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDphd3g6YXd4LWFkbWluIn0.JPqMTppBzMgCFJkW9drLJBUj9n4Zw-lIGMExIJA4byr-VFI1y9YXxHaVzM-ufcUWk8yUnQzri8oT_7HhUMrMgwpYHTEVRZtHlY3Tzh78tUCxKRki5lnZHoQVtN41XAt0GYhYrMKf2_lnVWtNpAVT3cQCROiLP4ElEMzuy9c8StERg23Rukw6UWEOhc1cOsUHKYbzf6spH-aHaWQNe76aiERXqSH6XTuTPLYdzr9gKy2utrBSvf7Rh677KIprLpF74gt1kXUJcqhbu3upqnPMDky9y-QNijhM9nky2eWlymNeu2t7pfBD91hgrYBs0yI_FMtcNvAQ3FI37H9cQYZbxw" # Token cua ban
   environment:
-    no_proxy: "172.25.250.20,127.0.0.1,localhost"
-    NO_PROXY: "172.25.250.20,127.0.0.1,localhost"
+    K8S_AUTH_HOST: "{{ k8s_api_url }}"
+    K8S_AUTH_API_KEY: "{{ k8s_token }}"
+    K8S_AUTH_VERIFY_SSL: "false"
   tasks:
     - name: 1. Lay danh sach cac Pod da hoan thanh (Succeeded)
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: awx
-        validate_certs: false
         field_selectors:
           - status.phase=Succeeded
       register: succeeded_pods
@@ -22,7 +26,6 @@
         state: absent
         kind: Pod
         namespace: awx
-        validate_certs: false
         name: "{{ item.metadata.name }}"
       loop: "{{ succeeded_pods.resources }}"
       when: succeeded_pods.resources | length > 0

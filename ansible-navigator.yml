@@ -3,9 +3,14 @@ ansible-navigator:
   execution-environment:
     container-engine: podman
     enabled: true
-    image: quay.io/ansible/creator-ee:latest
+    image: quay-ssc2.local.amigo.com/admin/k8s-ee-nampd:v1.1
     pull:
       policy: missing
+    volume-mounts:
+      - src: "~/.kube"
+        dest: "/home/runner/.kube"
+        options: "Z"
+
   mode: stdout
 
   playbook-artifact:
